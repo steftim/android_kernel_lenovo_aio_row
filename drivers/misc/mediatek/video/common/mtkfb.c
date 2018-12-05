@@ -52,6 +52,11 @@
 
 #include "mtk_ovl.h"
 #include <linux/ion_drv.h>
+#include <linux/errno.h>
+#include <linux/kernel.h>
+#include <linux/string.h>
+#include <linux/slab.h>
+#include <linux/pci.h>
 
 #include "disp_helper.h"
 #if defined(CONFIG_ARCH_MT6752)
@@ -273,47 +278,44 @@ static int mtkfb_release(struct fb_info *info, int user)
  * palette if one is available. For now we support only 16bpp and thus store
  * the entry only to the pseudo palette.
  */
+/*mtkfb_setcolreg() replace*/
+
 static int mtkfb_setcolreg(u_int regno, u_int red, u_int green,
-			   u_int blue, u_int transp, struct fb_info *info)
+			   u_int blue, u_int transp,
+			   struct fb_info *info)
 {
-	int r = 0;
-	unsigned bpp, m;
+    if (regno >= 256)
+       return -EINVAL;
+       
+    if (info->var.grayscale) {
+       red = green = blue = (red * 77 + green * 151 + blue * 28) >> 8;
+    }
 
-	NOT_REFERENCED(transp);
+#define CNVT_TOHW(val,width) ((((val)<<(width))+0x7FFF-(val))>>16)
+    red = CNVT_TOHW(red, info->var.red.length);
+    green = CNVT_TOHW(green, info->var.green.length);
+    blue = CNVT_TOHW(blue, info->var.blue.length);
+    transp = CNVT_TOHW(transp, info->var.transp.length);
+#undef CNVT_TOHW
 
-	MSG_FUNC_ENTER();
+    if (info->fix.visual == FB_VISUAL_TRUECOLOR ||
+	info->fix.visual == FB_VISUAL_DIRECTCOLOR) {
+	    u32 v;
 
-	bpp = info->var.bits_per_pixel;
-	m = 1 << bpp;
-	if (regno >= m) {
-		r = -EINVAL;
-		goto exit;
-	}
+	    if (regno >= 16)
+		    return -EINVAL;
 
-	switch (bpp) {
-	case 16:
-		/* RGB 565 */
-		((u32 *) (info->pseudo_palette))[regno] =
-		    ((red & 0xF800) | ((green & 0xFC00) >> 5) | ((blue & 0xF800) >> 11));
-		break;
-	case 32:
-		/* ARGB8888 */
-		((u32 *) (info->pseudo_palette))[regno] =
-		    (0xff000000) |
-		    ((red & 0xFF00) << 8) | ((green & 0xFF00)) | ((blue & 0xFF00) >> 8);
-		break;
+	    v = (red << info->var.red.offset) |
+		    (green << info->var.green.offset) |
+		    (blue << info->var.blue.offset) |
+		    (transp << info->var.transp.offset);
 
-		/* TODO: RGB888, BGR888, ABGR8888 */
+	    ((u32*)(info->pseudo_palette))[regno] = v;
+    }
 
-	default:
-		ASSERT(0);
-	}
-
-exit:
-	MSG_FUNC_LEAVE();
-	return r;
+    return 0;
 }
-
+ 
 //lenovo wangyq13 modify for cmd mode lcd 20150305
 #if defined(OTM1902A_FHD_DSI_CMD_TIANMA) || defined(NT35695_FHD_DSI_CMD_YASSY)
 unsigned int cmd_esd_last_backlight_level = 255;
