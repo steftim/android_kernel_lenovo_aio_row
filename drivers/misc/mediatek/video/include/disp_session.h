@@ -1,6 +1,10 @@
 #ifndef __DISP_SESSION_H
 #define __DISP_SESSION_H
 
+#ifdef CONFIG_COMPAT
+#include <linux/compat.h>
+#endif
+
 #define DISP_SESSION_DEVICE	"mtk_disp_mgr"
 
 
@@ -178,6 +182,14 @@ typedef struct {
 	int lcm_fps;
 } disp_session_vsync_config;
 
+#ifdef CONFIG_COMPAT
+typedef struct {
+	compat_uint_t session_id;
+	compat_uint_t vsync_cnt;
+	compat_long_t vsync_ts;
+} compat_disp_session_vsync_config;
+#endif
+
 typedef struct disp_input_config_t {
 	unsigned int layer_id;
 	unsigned int layer_enable;
@@ -213,6 +225,43 @@ typedef struct disp_input_config_t {
 	DISP_YUV_RANGE_ENUM yuv_range;
 } disp_input_config;
 
+#ifdef CONFIG_COMPAT
+typedef struct {
+	compat_uint_t layer_id;
+	compat_uint_t layer_enable;
+	compat_uint_t buffer_source;
+	compat_uptr_t src_base_addr;
+	compat_uptr_t src_phy_addr;
+	compat_uint_t src_direct_link;
+	compat_uint_t src_fmt;
+	compat_uint_t src_use_color_key;
+	compat_uint_t src_color_key;
+	compat_uint_t src_pitch;
+	compat_uint_t src_offset_x, src_offset_y;
+	compat_uint_t src_width, src_height;
+
+	compat_uint_t tgt_offset_x, tgt_offset_y;
+	compat_uint_t tgt_width, tgt_height;
+	compat_uint_t layer_rotation;
+	compat_uint_t layer_type;
+	compat_uint_t video_rotation;
+
+	compat_uint_t isTdshp;	/* set to 1, will go through tdshp first, then layer blending, then to color */
+
+	compat_uint_t next_buff_idx;
+	compat_int_t identity;
+	compat_int_t connected_type;
+	compat_int_t security;
+	compat_uint_t alpha_enable;
+	compat_uint_t alpha;
+	compat_uint_t sur_aen;
+	compat_uint_t src_alpha;
+	compat_uint_t dst_alpha;
+	compat_uint_t frm_sequence;
+	compat_uint_t yuv_range;
+} compat_disp_input_config;
+#endif
+
 typedef struct disp_output_config_t {
 	void *va;
 	void *pa;
@@ -229,12 +278,24 @@ typedef struct disp_output_config_t {
 	unsigned int frm_sequence;
 } disp_output_config;
 
+#define MAX_INPUT_CONFIG	8
+
 typedef struct disp_session_input_config_t {
 	DISP_SESSION_USER setter;
 	unsigned int session_id;
 	unsigned int config_layer_num;
-	disp_input_config config[8];
+	disp_input_config config[MAX_INPUT_CONFIG];
 } disp_session_input_config;
+
+#ifdef CONFIG_COMPAT
+typedef struct {
+	compat_uint_t setter;
+	compat_uint_t session_id;
+	compat_uint_t config_layer_num;
+	compat_disp_input_config config[MAX_INPUT_CONFIG];
+} compat_disp_session_input_config;
+
+#endif
 
 typedef struct disp_session_output_config_t {
 	unsigned int session_id;
@@ -386,6 +447,12 @@ typedef struct disp_session_buf_t {
 
 #define DISP_IOCTL_GET_IS_DRIVER_SUSPEND		DISP_IOW(217, unsigned int)
 #define DISP_IOCTL_GET_DISPLAY_CAPS			DISP_IOW(218, disp_caps_info)
+
+#ifdef CONFIG_COMPAT
+#define	DISP_IOCTL_SET_INPUT_BUFFER_32			DISP_IOW(206, compat_disp_session_input_config)
+#define	DISP_IOCTL_WAIT_FOR_VSYNC_32			DISP_IOW(213, compat_disp_session_vsync_config)
+#endif
+
 #define DISP_IOCTL_INSERT_SESSION_BUFFERS			DISP_IOW(219, disp_session_buf_info)
 #define	DISP_IOCTL_FRAME_CONFIG			DISP_IOW(220, disp_session_output_config)
 
