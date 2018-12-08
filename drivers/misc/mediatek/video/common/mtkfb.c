@@ -1633,9 +1633,24 @@ static int mtkfb_compat_ioctl(struct fb_info *info, unsigned int cmd, unsigned l
 {
 	struct fb_overlay_layer layerInfo;
 	long ret = 0;
+	
+#define MTKFB_GET_POWERSTATE_32                 MTK_IOR(21, unsigned int)
+#define MTKFB_CAPTURE_FRAMEBUFFER_32            MTK_IOW(3, unsigned int)
+#define MTKFB_CONFIG_IMMEDIATE_UPDATE_32        MTK_IOW(4, unsigned int)
 
-	pr_debug("[FB Driver] mtkfb_compat_ioctl, cmd=0x%08x, cmd nr=0x%08x, cmd size=0x%08x\n",
-		 cmd, (unsigned int)_IOC_NR(cmd), (unsigned int)_IOC_SIZE(cmd));
+#define MTKFB_GET_DEFAULT_UPDATESPEED_32        MTK_IOR(17, unsigned int)
+#define MTKFB_GET_CURR_UPDATESPEED_32           MTK_IOR(18, unsigned int)
+#define MTKFB_CHANGE_UPDATESPEED_32             MTK_IOW(19, unsigned int)
+#define MTKFB_AEE_LAYER_EXIST_32                MTK_IOR(23, unsigned int)
+#define MTKFB_FACTORY_AUTO_TEST_32              MTK_IOR(25, unsigned int)
+#define MTKFB_META_RESTORE_SCREEN_32            MTK_IOW(101, unsigned int)
+
+    pr_debug("[FB Driver] mtkfb_compat_ioctl, cmd=0x%08x, cmd nr=0x%08x, cmd size=0x%08x\n",
+	cmd, (unsigned int)_IOC_NR(cmd), (unsigned int)_IOC_SIZE(cmd));
+	
+	#define FORWARD_IOCTL(name) \
+        case name##_32: \
+            return mtkfb_ioctl(info, name, arg);
 
 	switch (cmd) {
 	case COMPAT_MTKFB_GET_POWERSTATE:
